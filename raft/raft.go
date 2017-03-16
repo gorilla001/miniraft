@@ -192,6 +192,8 @@ func (raft *Raft) Follower() string {
 					(*message.ResponseCh) <- responseMsg
 
 				case proto.TypeVoteRequest:
+					raft.timer.Reset(getRandomWaitDuration())
+
 					message := event.Data.(proto.VoteRequest)
 
 					voteResp, _ := raft.validateVoteRequest(message)
@@ -223,6 +225,8 @@ func (raft *Raft) Follower() string {
 					}
 
 				case proto.TypeAppendEntryRequest:
+					raft.timer.Reset(getRandomWaitDuration())
+
 					message := event.Data.(proto.AppendEntryRequest)
 					log.Printf("At Server %d, received AppendEntryResquest from %d", raft.ServerID, message.LeaderID)
 
