@@ -263,7 +263,11 @@ func (raft *Raft) Candidate() string {
 		LastLogTerm:  raft.LogObj.LastTerm(),
 	}
 
-	go raft.sendToServerReplica(&util.Event{util.TypeVoteRequest, voteRequestMsg}, util.Broadcast)
+	go func() {
+		log.Printf("Server %d send VoteMsg to others", raft.ServerID)
+		raft.sendVoteMsg(&voteRequestMsg)
+	}()
+
 	raft.LastVotedTerm = raft.Term
 
 	for raft.running.Get() {
@@ -309,6 +313,7 @@ func (raft *Raft) Candidate() string {
 
 				case util.TypeVoteRequest:
 					message := event.Data.(util.VoteRequest)
+					log.Println("Server ", raft.ServerID, " Received vote request from", message.CandidateID)
 					resp, changeState := raft.validateVoteRequest(message)
 
 					go raft.sendToServerReplica(&util.Event{util.TypeVoteReply, resp}, message.CandidateID)
@@ -780,11 +785,12 @@ func getRandomWaitDuration() time.Duration {
 
 func (raft *Raft) createReplicaConnections() {
 	for _, server := range raft.ClusterConfig.Servers {
-		if server.Id == raft.ServerID {
-			continue
-		} else {
-			go raft.connect(server.Id, server.Hostname, server.LogPort)
-		}
+		//if server.Id == raft.ServerID {
+		//	continue
+		//} else {
+		//	go raft.connect(server.Id, server.Hostname, server.LogPort)
+		//}
+		go raft.connect(server.Id, server.Hostname, server.LogPort)
 	}
 }
 
@@ -837,6 +843,20 @@ func (raft *Raft) RequestHandler(conn net.Conn) {
 			break
 		}
 		raft.EventInCh <- *event
+	}
+}
+
+func (raft *Raft) sendVoteMsg(voteMsg *util.VoteRequest) {
+	voteMsgEvent := util.Event{
+		Type: util.TypeVoteRequest,
+		Data: voteMsg,
+	}
+
+	for serverID, replicaSocket := range raft.ReplicaChannels {
+		if replicaSocket != nil {
+			replicaSocket.Encode(&voteMsgEvent)
+		}
+		log.Printf("Invalid channel to server" + strconv.Itoa(serverID))
 	}
 }
 
