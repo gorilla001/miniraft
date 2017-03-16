@@ -3,9 +3,9 @@ package handler
 import (
 	"errors"
 	"fmt"
+	util "github.com/pwzgorilla/miniraft/util"
 	"strconv"
 	"strings"
-	util "github.com/saurabh-hote/cs733/assignment-3/util"
 )
 
 func Parse(cmd string) (util.Command, error) {

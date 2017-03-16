@@ -3,7 +3,7 @@ package raft
 import (
 	"container/heap"
 	"fmt"
-	util "github.com/saurabh-hote/cs733/assignment-3/util"
+	util "github.com/pwzgorilla/miniraft/util"
 	"log"
 	"time"
 )

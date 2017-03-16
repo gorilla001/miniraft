@@ -3,7 +3,7 @@ package raft
 import (
 	"encoding/gob"
 	"errors"
-	util "github.com/saurabh-hote/cs733/assignment-3/util"
+	util "github.com/pwzgorilla/miniraft/util"
 	"log"
 	"math/rand"
 	"net"
@@ -14,9 +14,9 @@ import (
 
 //Constansts indicating the replica's state
 const (
-	FOLLOWER  = "FOLLOWER"
-	CANDIDATE = "CANDIDATE"
-	LEADER    = "LEADER"
+	FOLLOWER  = "follower"
+	CANDIDATE = "candidate"
+	LEADER    = "leader"
 )
 
 const (

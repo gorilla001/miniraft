@@ -3,7 +3,7 @@ package handler
 import (
 	"bufio"
 	"fmt"
-	util "github.com/saurabh-hote/cs733/assignment-3/util"
+	util "github.com/pwzgorilla/miniraft/util"
 	"io"
 	"log"
 	"net"
@@ -90,7 +90,7 @@ func HandleConn(serverID int, conn net.Conn, appendReqChannel chan util.Event, m
 
 			//Obtain a lock on the raft instance
 			//mutex.Lock()
-				
+
 			//push the messgae onto the shared channel
 			//This will block until previous request gets completed
 			appendReqChannel <- message

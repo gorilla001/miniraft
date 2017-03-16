@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	raft "github.com/saurabh-hote/cs733/assignment-3/raft"
+	raft "github.com/pwzgorilla/miniraft/raft"
 	"io"
 	"io/ioutil"
 	"log"
@@ -182,7 +182,7 @@ func TestConsensus(t *testing.T) {
 		doneCh <- true
 	}(leaderConfig.Id)
 
-	<- doneCh
+	<-doneCh
 
 	verifyCommand := "getm saurabh\r\n"
 	version := executeGetMForVersion(t, verifyCommand, leaderConfig)
