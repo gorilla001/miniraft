@@ -322,7 +322,7 @@ func (raft *Raft) Candidate() string {
 					resp, changeState := raft.validateVoteRequest(message)
 
 					go func() {
-						raft.sendVoteReply(resp, message.CandidateID)
+						raft.sendVoteReply(&resp, message.CandidateID)
 					}()
 
 					if changeState {
@@ -361,20 +361,15 @@ func (raft *Raft) Candidate() string {
 					}
 
 				case proto.TypeHeartBeat:
-					message := event.Data.(proto.AppendEntryRequest)
+					message := event.Data.(proto.HeartBeatRequest)
 					log.Printf("At Server %d, received HeartBeat meassage from %d", raft.ServerID, message.LeaderID)
 
-					if raft.LeaderID == -1 {
-						raft.LeaderID = message.LeaderID
-						log.Printf("At server %d, found a new leader %d", raft.ServerID, message.LeaderID)
-					}
-					raft.timer.Reset(getRandomWaitDuration())
-
-					resp, changeOfLeader := raft.validateAppendEntryRequest(message)
+					resp, changeOfLeader := raft.validateHeartBeatRequest(message)
 
 					log.Printf("At Server %d, sending HeartBeat response to leader %d", raft.ServerID, message.LeaderID)
-
-					go raft.sendToServerReplica(&proto.Event{proto.TypeHeartBeatResponse, resp}, message.LeaderID)
+					go func() {
+						raft.sendHeartBeatReply(&resp, message.LeaderID)
+					}()
 
 					if changeOfLeader {
 						raft.LeaderID = message.LeaderID
@@ -622,6 +617,22 @@ func (raft *Raft) validateVoteRequest(req proto.VoteRequest) (proto.VoteReply, b
 		return proto.VoteReply{raft.Term, true, raft.ServerID}, changeState
 	}
 
+}
+
+func (raft *Raft) validateHeartBeatRequest(req proto.HeartBeatRequest) (proto.HeartBeatReply, bool) {
+	if req.Term < raft.Term {
+		return proto.HeartBeatReply{
+			Term:     raft.Term,
+			LeaderID: raft.LeaderID,
+			Success:  false,
+		}, false
+	}
+
+	return proto.HeartBeatReply{
+		Term:     req.Term,
+		LeaderID: req.LeaderID,
+		Success:  true,
+	}, true
 }
 
 func (raft *Raft) validateAppendEntryRequest(req proto.AppendEntryRequest) (proto.AppendEntryResponse, bool) {
@@ -878,6 +889,21 @@ func (raft *Raft) sendVoteReply(voteReplyMsg *proto.VoteReply, serverID int) {
 	replicaSocket := raft.ReplicaChannels[serverID]
 	if replicaSocket != nil {
 		replicaSocket.Encode(&voteReplyEvent)
+		return
+	}
+
+	log.Printf("Invalid channel to server" + strconv.Itoa(serverID))
+}
+
+func (raft *Raft) sendHeartBeatReply(heartBeartReplyMsg *proto.HeartBeatReply, serverID int) {
+	heartBeartReplyEvent := proto.Event{
+		Type: proto.TypeHeartBeatResponse,
+		Data: heartBeartReplyMsg,
+	}
+
+	replicaSocket := raft.ReplicaChannels[serverID]
+	if replicaSocket != nil {
+		replicaSocket.Encode(&heartBeartReplyEvent)
 		return
 	}
 

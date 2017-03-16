@@ -93,3 +93,14 @@ type ClientAppendRequest struct {
 	Data       []byte
 	ResponseCh *chan string
 }
+
+type HeartBeatRequest struct {
+	Term     uint64
+	LeaderID int
+}
+
+type HeartBeatReply struct {
+	Term     uint64
+	LeaderID int
+	Success  bool
+}
