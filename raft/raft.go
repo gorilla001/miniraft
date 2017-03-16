@@ -266,7 +266,7 @@ func (raft *Raft) Candidate() string {
 
 	go func() {
 		log.Printf("Server %d send VoteMsg to others", raft.ServerID)
-		raft.sendVoteMsg(&voteRequestMsg)
+		raft.sendVoteRequest(&voteRequestMsg)
 	}()
 
 	raft.LastVotedTerm = raft.Term
@@ -317,7 +317,10 @@ func (raft *Raft) Candidate() string {
 					log.Println("Server ", raft.ServerID, " Received vote request from", message.CandidateID)
 					resp, changeState := raft.validateVoteRequest(message)
 
-					go raft.sendToServerReplica(&proto.Event{proto.TypeVoteReply, resp}, message.CandidateID)
+					go func() {
+						raft.sendVoteReply(resp, message.CandidateID)
+					}()
+
 					if changeState {
 						raft.LeaderID = -1 //TODO: changed from  -1 to message.CandidateID
 						raft.LastVotedCandidateID = message.CandidateID
@@ -847,18 +850,34 @@ func (raft *Raft) RequestHandler(conn net.Conn) {
 	}
 }
 
-func (raft *Raft) sendVoteMsg(voteMsg *proto.VoteRequest) {
-	voteMsgEvent := proto.Event{
+func (raft *Raft) sendVoteRequest(voteRequestMsg *proto.VoteRequest) {
+	voteRequestEvent := proto.Event{
 		Type: proto.TypeVoteRequest,
-		Data: voteMsg,
+		Data: voteRequestMsg,
 	}
 
 	for serverID, replicaSocket := range raft.ReplicaChannels {
 		if replicaSocket != nil {
-			replicaSocket.Encode(&voteMsgEvent)
+			replicaSocket.Encode(&voteRequestEvent)
+			continue
 		}
 		log.Printf("Invalid channel to server" + strconv.Itoa(serverID))
 	}
+}
+
+func (raft *Raft) sendVoteReply(voteReplyMsg *proto.VoteReply, serverID int) {
+	voteReplyEvent := proto.Event{
+		Type: proto.TypeVoteReply,
+		Data: voteReplyMsg,
+	}
+
+	replicaSocket := raft.ReplicaChannels[serverID]
+	if replicaSocket != nil {
+		replicaSocket.Encode(&voteReplyEvent)
+		return
+	}
+
+	log.Printf("Invalid channel to server" + strconv.Itoa(serverID))
 }
 
 func (raft *Raft) sendToServerReplica(message *proto.Event, replicaID int) {
