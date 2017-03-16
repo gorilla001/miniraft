@@ -1,4 +1,4 @@
-package util
+package proto
 
 //Constants for request type
 const (

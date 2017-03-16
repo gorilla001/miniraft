@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	handler "github.com/pwzgorilla/miniraft/handler"
-	raft "github.com/pwzgorilla/miniraft/raft"
-	util "github.com/pwzgorilla/miniraft/util"
 	"io/ioutil"
 	"log"
+
+	"github.com/pwzgorilla/miniraft/handler"
+	"github.com/pwzgorilla/miniraft/proto"
+	"github.com/pwzgorilla/miniraft/raft"
 )
 
 type NullWriter int
@@ -49,13 +50,13 @@ func main() {
 	}
 	log.Println("Starting sevrer with ID ", *serverIdPtr)
 
-	commitCh := make(chan util.LogEntry, 10000)
+	commitCh := make(chan proto.LogEntry, 10000)
 	raftInstance, err := raft.NewRaft(clusterConfig, *serverIdPtr, commitCh)
 	if err != nil {
 		log.Println("Error creating server instance : ", err.Error())
 	}
 
-	raftInstance.EventInCh = make(chan util.Event, 1000)
+	raftInstance.EventInCh = make(chan proto.Event, 1000)
 
 	//First entry in the ClusterConfig will be the default leader
 	var clientPort int

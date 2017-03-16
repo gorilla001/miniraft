@@ -3,16 +3,17 @@ package handler
 import (
 	"bufio"
 	"fmt"
-	util "github.com/pwzgorilla/miniraft/util"
 	"io"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/pwzgorilla/miniraft/proto"
 )
 
-func StartConnectionHandler(serverID int, clientPort int, appendReqChannel chan util.Event, mutex *sync.Mutex) {
+func StartConnectionHandler(serverID int, clientPort int, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
 
 	sock, err := net.Listen("tcp", ":"+strconv.FormatInt(int64(clientPort), 10))
 	if err != nil {
@@ -27,7 +28,7 @@ func StartConnectionHandler(serverID int, clientPort int, appendReqChannel chan 
 	}
 }
 
-func HandleConn(serverID int, conn net.Conn, appendReqChannel chan util.Event, mutex *sync.Mutex) {
+func HandleConn(serverID int, conn net.Conn, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
 	addr := conn.RemoteAddr()
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
@@ -58,7 +59,7 @@ func HandleConn(serverID int, conn net.Conn, appendReqChannel chan util.Event, m
 			responseChannel <- e.Error()
 		} else {
 			//Do work here
-			if cmd.Action == util.Set || cmd.Action == util.Cas {
+			if cmd.Action == proto.Set || cmd.Action == proto.Cas {
 				buf := make([]byte, cmd.Numbytes)
 				_, ed := io.ReadFull(reader, buf)
 				if (ed) != nil {
@@ -79,14 +80,14 @@ func HandleConn(serverID int, conn net.Conn, appendReqChannel chan util.Event, m
 				}
 			}
 
-			data, err := util.EncodeCommand(cmd)
+			data, err := proto.EncodeCommand(cmd)
 
 			if err != nil {
 				log.Printf("At Server %d, ERROR in encoding to gob -  %s", serverID, err.Error())
 			}
 
 			//now create message for the shared log module
-			message := util.Event{util.TypeClientAppendRequest, util.ClientAppendRequest{data, &responseChannel}}
+			message := proto.Event{proto.TypeClientAppendRequest, proto.ClientAppendRequest{data, &responseChannel}}
 
 			//Obtain a lock on the raft instance
 			//mutex.Lock()
@@ -100,13 +101,13 @@ func HandleConn(serverID int, conn net.Conn, appendReqChannel chan util.Event, m
 	log.Printf("At Server %d, Closing the client port.", serverID)
 
 	//Remove the response channel from the map
-	util.ResponseChannelStore.Lock()
-	for key, value := range util.ResponseChannelStore.M {
+	proto.ResponseChannelStore.Lock()
+	for key, value := range proto.ResponseChannelStore.M {
 		if *value == responseChannel {
-			delete(util.ResponseChannelStore.M, key)
+			delete(proto.ResponseChannelStore.M, key)
 		}
 	}
-	util.ResponseChannelStore.Unlock()
+	proto.ResponseChannelStore.Unlock()
 	conn.Close()
 }
 

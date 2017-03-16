@@ -3,14 +3,15 @@ package handler
 import (
 	"errors"
 	"fmt"
-	util "github.com/pwzgorilla/miniraft/util"
 	"strconv"
 	"strings"
+
+	"github.com/pwzgorilla/miniraft/proto"
 )
 
-func Parse(cmd string) (util.Command, error) {
+func Parse(cmd string) (proto.Command, error) {
 	arr := strings.Split(cmd, " ")
-	c := util.Command{0, "", 0, 0, 0, nil}
+	c := proto.Command{0, "", 0, 0, 0, nil}
 	e := errors.New("ERR_CMD_ERR\r\n")
 	l := len(arr)
 	switch arr[0] {
@@ -19,7 +20,7 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 4 {
 				return c, e
 			}
-			c.Action = util.Set
+			c.Action = proto.Set
 			c.Key = arr[1]
 			exp, e1 := strconv.Atoi(arr[2])
 			if e1 != nil || exp < 0 {
@@ -38,7 +39,7 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 2 {
 				return c, e
 			}
-			c.Action = util.Get
+			c.Action = proto.Get
 			c.Key = arr[1]
 		}
 	case "getm":
@@ -46,7 +47,7 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 2 {
 				return c, e
 			}
-			c.Action = util.Getm
+			c.Action = proto.Getm
 			c.Key = arr[1]
 		}
 	case "cas":
@@ -54,7 +55,7 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 5 {
 				return c, e
 			}
-			c.Action = util.Cas
+			c.Action = proto.Cas
 			c.Key = arr[1]
 			exp, e1 := strconv.Atoi(arr[2])
 			if e1 != nil || exp < 0 {
@@ -77,7 +78,7 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 2 {
 				return c, e
 			}
-			c.Action = util.Delete
+			c.Action = proto.Delete
 			c.Key = arr[1]
 		}
 	case "cleanup": // Not specified in syntax, but provides manual cleanup option
@@ -85,11 +86,11 @@ func Parse(cmd string) (util.Command, error) {
 			if l != 1 {
 				return c, e
 			}
-			c.Action = util.Cleanup
+			c.Action = proto.Cleanup
 		}
 	case "stopserver":
 		{
-			c.Action = util.StopServer
+			c.Action = proto.StopServer
 		}
 	default:
 		{

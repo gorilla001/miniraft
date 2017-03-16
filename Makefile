@@ -1,4 +1,4 @@
-.PHONY: build fmt 
+.PHONY: darwin fmt 
 
 # Prepend our vendor directory to the system GOPATH
 # so that import path resolution will prioritize
@@ -10,10 +10,10 @@ export GO15VENDOREXPERIMENT=1
 default: darwin 
 
 darwin: fmt 
-        GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -v -o miniraft .
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -v 
 
 linux: fmt 
-        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o miniraft .
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v
 
 # http://golang.org/cmd/go/#hdr-Run_gofmt_on_package_sources
 fmt:

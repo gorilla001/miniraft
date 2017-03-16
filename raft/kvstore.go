@@ -3,12 +3,13 @@ package raft
 import (
 	"container/heap"
 	"fmt"
-	util "github.com/pwzgorilla/miniraft/util"
 	"log"
 	"time"
+
+	"github.com/pwzgorilla/miniraft/proto"
 )
 
-type command util.Command
+type command proto.Command
 
 type value struct {
 	data     []byte
@@ -18,7 +19,7 @@ type value struct {
 }
 
 //Map Manager
-func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel has to be of type MyLogEntry. This is commitCh
+func InitializeKVStore(serverID int, ch chan proto.LogEntry) { //	This channel has to be of type MyLogEntry. This is commitCh
 	//The map which actually stores values
 	m := make(map[string]value)
 	h := &nodeHeap{}
@@ -26,13 +27,13 @@ func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel ha
 	go cleaner(heapCleanupInterval, ch)
 	for {
 		logEntry := <-ch
-		cmd, _ := util.DecodeCommand(logEntry.Data())
+		cmd, _ := proto.DecodeCommand(logEntry.Data())
 
 		responseMsg := "ERR_NOT_FOUND\r\n"
 		val, ok := m[cmd.Key]
 
 		switch cmd.Action {
-		case util.Set:
+		case proto.Set:
 			{
 				var version uint64
 				version = 0
@@ -50,13 +51,13 @@ func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel ha
 				}
 				responseMsg = fmt.Sprintf("OK %v\r\n", version)
 			}
-		case util.Get:
+		case proto.Get:
 			{
 				if ok {
 					responseMsg = fmt.Sprintf("VALUE %v\r\n"+string(val.data)+"\r\n", val.numbytes)
 				}
 			}
-		case util.Getm:
+		case proto.Getm:
 			{
 				if ok {
 					t := val.expiry
@@ -66,7 +67,7 @@ func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel ha
 					responseMsg = fmt.Sprintf("VALUE %v %v %v\r\n"+string(val.data)+"\r\n", val.version, t, val.numbytes)
 				}
 			}
-		case util.Cas:
+		case proto.Cas:
 			{
 				if ok {
 					if val.version == cmd.Version {
@@ -85,14 +86,14 @@ func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel ha
 					}
 				}
 			}
-		case util.Delete:
+		case proto.Delete:
 			{
 				if ok {
 					delete(m, cmd.Key)
 					responseMsg = "DELETED\r\n"
 				}
 			}
-		case util.Cleanup:
+		case proto.Cleanup:
 			{
 				t := time.Now().Unix()
 				for (*h).Len() != 0 && (*h)[0].expiry <= t {
@@ -110,29 +111,29 @@ func InitializeKVStore(serverID int, ch chan util.LogEntry) { //	This channel ha
 			}
 		}
 
-		if cmd.Action != util.Cleanup {
+		if cmd.Action != proto.Cleanup {
 			// Send response to appropriate handler's channel
-			util.ResponseChannelStore.RLock()
-			responseChannel := util.ResponseChannelStore.M[logEntry.Lsn()]
-			util.ResponseChannelStore.RUnlock()
+			proto.ResponseChannelStore.RLock()
+			responseChannel := proto.ResponseChannelStore.M[logEntry.Lsn()]
+			proto.ResponseChannelStore.RUnlock()
 
 			if responseChannel == nil {
 				log.Printf("At server %d,  Response channel for LogEntry not found", serverID)
 			} else {
 				//Delete the entry for response channel handle
-				util.ResponseChannelStore.Lock()
-				delete(util.ResponseChannelStore.M, logEntry.Lsn())
-				util.ResponseChannelStore.Unlock()
+				proto.ResponseChannelStore.Lock()
+				delete(proto.ResponseChannelStore.M, logEntry.Lsn())
+				proto.ResponseChannelStore.Unlock()
 				*responseChannel <- responseMsg
 			}
 		}
 	}
 }
 
-func cleaner(interval int, ch chan util.LogEntry) {
-	command := util.Command{util.Cleanup, "", 0, 0, 0, nil}
-	data, err := util.EncodeCommand(command)
-	logEntry := util.LogEntryObj{0, data, false, 0}
+func cleaner(interval int, ch chan proto.LogEntry) {
+	command := proto.Command{proto.Cleanup, "", 0, 0, 0, nil}
+	data, err := proto.EncodeCommand(command)
+	logEntry := proto.LogEntryObj{0, data, false, 0}
 	if err != nil {
 		log.Println("Error encoding the command ", err.Error())
 	}
