@@ -6,6 +6,8 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"net"
+	"strings"
 
 	"github.com/pwzgorilla/miniraft/handler"
 	"github.com/pwzgorilla/miniraft/proto"
@@ -42,16 +44,32 @@ func main() {
 	}
 
 	//starting the server
-	serverIdPtr := flag.Int("id", 1, "an int")
+	id := flag.Int("id", 1, "an int")
+	members := flag.String("members", "localhost:3588", "members address")
 	flag.Parse()
 
-	if err != nil {
-		log.Println("Invalid Server ID provided : ", err.Error())
+	memberList := strings.Split(*members, ",")
+
+	addrs, _ := net.InterfaceAddrs()
+
+	var myip string
+	for _, member := range memberList {
+		for _, addr := range addrs {
+			if member == addr.(*net.IPNet).IP.String() {
+				myip = member
+			}
+		}
 	}
-	log.Println("Starting sevrer with ID ", *serverIdPtr)
+
+	if myip == "" {
+		log.Println("Error: members not contain local address")
+		return
+	}
+
+	log.Println("Starting sevrer with ID ", *id)
 
 	commitCh := make(chan proto.LogEntry, 10000)
-	raftInstance, err := raft.NewRaft(clusterConfig, *serverIdPtr, commitCh)
+	raftInstance, err := raft.NewRaft(clusterConfig, *id, commitCh)
 	if err != nil {
 		log.Println("Error creating server instance : ", err.Error())
 	}
