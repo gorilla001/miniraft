@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 
 	"github.com/pwzgorilla/miniraft/handler"
@@ -44,7 +45,7 @@ func main() {
 	}
 
 	//starting the server
-	id := flag.Int("id", 1, "an int")
+	//id := flag.Int("id", 1, "an int")
 	members := flag.String("members", "localhost:3588", "members address")
 	flag.Parse()
 
@@ -66,10 +67,11 @@ func main() {
 		return
 	}
 
-	log.Println("Starting sevrer with ID ", *id)
+	id, _ := strconv.Atoi(strings.Replace(myip, ".", "", -1))
+	log.Println("Starting sevrer with ID ", id)
 
 	commitCh := make(chan proto.LogEntry, 10000)
-	raftInstance, err := raft.NewRaft(clusterConfig, *id, commitCh)
+	raftInstance, err := raft.NewRaft(clusterConfig, id, commitCh)
 	if err != nil {
 		log.Println("Error creating server instance : ", err.Error())
 	}
