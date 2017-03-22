@@ -880,7 +880,7 @@ func (raft *Raft) sendVoteRequest(voteRequestMsg *proto.VoteRequest) {
 			}
 			continue
 		}
-		log.Printf("Invalid channel to server" + serverID)
+		log.Printf("Invalid channel to server " + serverID)
 	}
 }
 
