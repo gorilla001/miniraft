@@ -13,7 +13,7 @@ import (
 	"github.com/pwzgorilla/miniraft/proto"
 )
 
-func StartConnectionHandler(serverID int, clientPort int, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
+func StartConnectionHandler(serverID string, clientPort int, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
 
 	sock, err := net.Listen("tcp", ":"+strconv.FormatInt(int64(clientPort), 10))
 	if err != nil {
@@ -28,7 +28,7 @@ func StartConnectionHandler(serverID int, clientPort int, appendReqChannel chan 
 	}
 }
 
-func HandleConn(serverID int, conn net.Conn, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
+func HandleConn(serverID string, conn net.Conn, appendReqChannel chan proto.Event, mutex *sync.Mutex) {
 	addr := conn.RemoteAddr()
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
@@ -111,7 +111,7 @@ func HandleConn(serverID int, conn net.Conn, appendReqChannel chan proto.Event, 
 	conn.Close()
 }
 
-func pollAndReply(serverID int, w *bufio.Writer, clientAddr net.Addr, responseChannel *chan string) {
+func pollAndReply(serverID string, w *bufio.Writer, clientAddr net.Addr, responseChannel *chan string) {
 	for {
 		replyMessage := <-*responseChannel
 

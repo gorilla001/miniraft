@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"log"
-	"strconv"
+	//"strconv"
 	"sync"
 )
 
@@ -22,8 +22,8 @@ type Log struct {
 }
 
 // create new log
-func NewLog(serverID int) *Log {
-	boltDB, err := bolt.Open("tmp/log"+strconv.Itoa(serverID)+".db ", 0600, nil)
+func NewLog(serverID string) *Log {
+	boltDB, err := bolt.Open("tmp/log"+serverID+".db ", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

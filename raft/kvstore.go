@@ -19,7 +19,7 @@ type value struct {
 }
 
 //Map Manager
-func InitializeKVStore(serverID int, ch chan proto.LogEntry) { //	This channel has to be of type MyLogEntry. This is commitCh
+func InitializeKVStore(serverID string, ch chan proto.LogEntry) { //	This channel has to be of type MyLogEntry. This is commitCh
 	//The map which actually stores values
 	m := make(map[string]value)
 	h := &nodeHeap{}

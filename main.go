@@ -38,40 +38,67 @@ func main() {
 	//log.SetOutput(new(NullWriter))
 
 	//TODO: Read the config.json file to get all the server configurations
-	clusterConfig, err := ReadConfig("config.json")
-	if err != nil {
-		log.Println("Error parsing config file : ", err.Error())
-		return
-	}
+	//clusterConfig, err := ReadConfig("config.json")
+	//if err != nil {
+	//	log.Println("Error parsing config file : ", err.Error())
+	//	return
+	//}
 
 	//starting the server
 	//id := flag.Int("id", 1, "an int")
+	listen := flag.String("listen", "", "listen address")
 	members := flag.String("members", "localhost:3588", "members address")
 	flag.Parse()
 
 	memberList := strings.Split(*members, ",")
-
-	addrs, _ := net.InterfaceAddrs()
-
-	var myip string
+	var Members []*raft.Member
 	for _, member := range memberList {
-		for _, addr := range addrs {
-			if member == addr.(*net.IPNet).IP.String() {
-				myip = member
-			}
+		host, port, err := net.SplitHostPort(member)
+
+		if err != nil {
+			log.Println("[ERROR]", err.Error())
+			return
 		}
+
+		p, err := strconv.Atoi(port)
+		if err != nil {
+			log.Println("[ERROR]", err.Error())
+			return
+		}
+
+		Members = append(Members, &raft.Member{
+			IP:   host,
+			Port: p,
+		})
 	}
 
-	if myip == "" {
-		log.Println("Error: members not contain local address")
+	//addrs, _ := net.InterfaceAddrs()
+
+	//var myip string
+	//for _, member := range memberList {
+	//	for _, addr := range addrs {
+	//		if member == addr.(*net.IPNet).IP.String() {
+	//			myip = member
+	//		}
+	//	}
+	//}
+
+	//if myip == "" {
+	//	log.Println("Error: members not contain local address")
+	//	return
+	//}
+
+	//id, _ := strconv.Atoi(strings.Replace(myip, ".", "", -1))
+	host, _, err := net.SplitHostPort(*listen)
+	if err != nil {
+		log.Println("[ERROR]", err.Error())
 		return
 	}
-
-	id, _ := strconv.Atoi(strings.Replace(myip, ".", "", -1))
-	log.Println("Starting sevrer with ID ", id)
+	//id, _ := strconv.Atoi(strings.Replace(host, ".", "", -1))
+	log.Println("Starting sevrer with ID ", host)
 
 	commitCh := make(chan proto.LogEntry, 10000)
-	raftInstance, err := raft.NewRaft(clusterConfig, id, commitCh)
+	raftInstance, err := raft.NewRaft(Members, host, commitCh)
 	if err != nil {
 		log.Println("Error creating server instance : ", err.Error())
 	}
@@ -80,10 +107,10 @@ func main() {
 
 	//First entry in the ClusterConfig will be the default leader
 	var clientPort int
-	for _, server := range raftInstance.ClusterConfig.Servers {
+	for _, server := range raftInstance.Members {
 		//Initialize the connection handler module
-		if server.Id == raftInstance.ServerID {
-			clientPort = server.ClientPort
+		if server.IP == raftInstance.ServerID {
+			clientPort = server.Port
 			raftInstance.CurrentState = raft.FOLLOWER
 		}
 	}

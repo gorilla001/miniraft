@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	Broadcast = -1
+	Broadcast = "broadcast"
 )
 
 type Lsn uint64      //Log sequence number, unique for all time.
@@ -57,7 +57,7 @@ type Event struct {
 //This struct will be sent as RPC message between the replicas
 type AppendEntryRequest struct {
 	LogEntries        []LogEntryObj
-	LeaderID          int
+	LeaderID          string
 	LeaderCommitIndex Lsn
 	PreviousLogIndex  Lsn
 	Term              uint64
@@ -66,7 +66,7 @@ type AppendEntryRequest struct {
 
 type AppendEntryResponse struct {
 	//Reply strucrure.
-	ServerID         int
+	ServerID         string
 	Term             uint64
 	Success          bool
 	PreviousLogIndex Lsn
@@ -76,7 +76,7 @@ type AppendEntryResponse struct {
 
 type VoteRequest struct {
 	Term         uint64
-	CandidateID  int
+	CandidateID  string
 	LastLogIndex Lsn
 	LastLogTerm  uint64
 }
@@ -84,7 +84,7 @@ type VoteRequest struct {
 type VoteReply struct {
 	Term     uint64
 	Result   bool
-	ServerID int
+	ServerID string
 }
 
 type Timeout struct{}
@@ -96,11 +96,11 @@ type ClientAppendRequest struct {
 
 type HeartBeatRequest struct {
 	Term     uint64
-	LeaderID int
+	LeaderID string
 }
 
 type HeartBeatReply struct {
 	Term     uint64
-	LeaderID int
+	LeaderID string
 	Success  bool
 }
