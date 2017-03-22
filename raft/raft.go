@@ -274,7 +274,7 @@ func (raft *Raft) Candidate() string {
 	}
 
 	go func() {
-		log.Printf("Server %s send VoteMsg to others", raft.ServerID)
+		log.Printf("Server %s start sending vote messages", raft.ServerID)
 		raft.sendVoteRequest(&voteRequestMsg)
 	}()
 
@@ -818,9 +818,7 @@ func (raft *Raft) connect(ip string, port int) {
 	for raft.running.Get() {
 		conn, err := net.Dial("tcp", ip+":"+strconv.Itoa(port))
 		if err != nil {
-			//	log.Println("At server " + strconv.Itoa(raft.ServerID) + ", connect error " + err.Error())
-			//wait for sometime before reattempting new connection
-
+			log.Printf("%s\n", err.Error())
 		} else {
 			encoder := gob.NewEncoder(conn)
 			raft.ReplicaChannels[ip] = encoder
@@ -837,7 +835,7 @@ func (raft *Raft) startListeningForReplicaEvents() {
 		}
 	}
 
-	psock, err := net.Listen("tcp", ":"+strconv.Itoa(serverConfig.Port))
+	psock, err := net.Listen("tcp", serverConfig.IP+":"+strconv.Itoa(serverConfig.Port))
 	if err != nil {
 		return
 	}
@@ -873,7 +871,10 @@ func (raft *Raft) sendVoteRequest(voteRequestMsg *proto.VoteRequest) {
 
 	for serverID, replicaSocket := range raft.ReplicaChannels {
 		if replicaSocket != nil {
-			replicaSocket.Encode(&voteRequestEvent)
+			log.Printf("Sending VoteMsg RPC to %s", serverID)
+			if err := replicaSocket.Encode(&voteRequestEvent); err != nil {
+				log.Printf("%s", err.Error())
+			}
 			continue
 		}
 		log.Printf("Invalid channel to server" + serverID)
